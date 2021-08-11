@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Foundation\Bus\DispatchesJobs;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\DB;
+use App\Item;
 
 class RssReaderController extends BaseController
 {
@@ -13,34 +14,13 @@ class RssReaderController extends BaseController
    
     function itemParse( $item ){
     
-        $table = "ITEMS";
-        $fieldStr = '';
-        $valueStr = '';
         
         $guid = $item->guid[0];
         
-        $res = DB::select('select * from ITEMS where guid = :guid', [ 'guid' => $guid ]);
         
+        $res = Item::where('guid', '=', $item['guid']);
         //var_dump( $res );
-       // var_dump( $item->guid);
-        //echo('<hr />');
-        if( count($res) != 0 ) return;
         
-        foreach( $item as $key => $value ){
-            
-            if( $key == 'enclosure' ) continue;
-        
-            $fieldStr = $fieldStr . $key . ', ';
-            $valueStr = $valueStr . $value . ', ';
-        
-        }
-        $fieldStr = substr($fieldStr, 0, -2);
-        $valueStr = substr($valueStr, 0, -2);
-        
-        
-        //var_dump( $valueStr . "<hr />");
-        DB::insert('insert into ITEMS (id, title, link, description, guid, pubDate) values (NULL, :title, :link, :description, :guid, :pubDate)', [ 'title' => $item['title'], 'link' => $item['link'], 'description' => $item['description'], 'guid' => $item['guid'], 'pubDate' => 1 ]  );
-    
     
     }
     
@@ -57,10 +37,10 @@ class RssReaderController extends BaseController
         
         foreach( $xml->channel->item as $key => $value ){
         
-            $this->itemParse( $value);
-            
-            
-           // var_dump( $value);
+           $res = Item::where('guid', $value->guid)->get();
+        
+           if( $res->isEmpty()===false ) continue;
+           var_dump( $res);
         
         }
         
