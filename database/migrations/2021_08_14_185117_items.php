@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class QueryLogs0 extends Migration
+class Items extends Migration
 {
     /**
      * Run the migrations.
@@ -13,16 +13,16 @@ class QueryLogs0 extends Migration
      */
     public function up()
     {
+        //
         
-        Schema::create('query_logs', function (Blueprint $table) {
+        Schema::create('items', function (Blueprint $table) {
             $table->increments('id');
-            $table->string('requestUrl');
-            $table->string('requestMethod');
-            $table->string('responseHttpCode');
-            $table->string('timestamp');
-            $table->timestamps();
+            $table->text('title');
+            $table->text('link');
+            $table->longText('description');
+            $table->string('guid');
+            $table->string('pubDate');
         });
-        
     }
 
     /**
@@ -32,9 +32,6 @@ class QueryLogs0 extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('query_logs');
+        Schema::dropIfExists('items');
     }
 }
-
-
-?>
