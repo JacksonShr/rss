@@ -6,21 +6,35 @@ use Illuminate\Foundation\Bus\DispatchesJobs;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\DB;
 use App\Item;
+use App\Enclosure;
 
 class RssReaderController extends BaseController
 {
     //use AuthorizesRequests, DispatchesJobs, ValidatesRequests;
     
    
-    function itemParse( $item ){
-    
+    function enclosureCreate( $object, $item_id ){
         
-        $guid = $item->guid[0];
+        /*
+        var_dump( $object);
+        echo "<hr />";
+        echo "$item_id";
+        echo "<hr />";
+        //if( !isset($value->enclosure) ) return;*/
         
         
-        $res = Item::where('guid', '=', $item['guid']);
-        //var_dump( $res );
-        
+        $enclosure = new Enclosure;
+           
+           $enclosure->url = $object['url'];
+           
+           $enclosure->type = $object['type'];
+           
+           $enclosure->length = $object['length'];
+           
+           $enclosure->item_id = $item_id;1;//$object->item_id;
+           
+           $enclosure->save();           
+           
     
     }
     
@@ -40,12 +54,49 @@ class RssReaderController extends BaseController
            $res = Item::where('guid', $value->guid)->get();
         
            if( $res->isEmpty()===false ) continue;
-           var_dump( $res);
+           
+           
+           $item  = new Item;
+           
+           $item->title = $value->title;
+           
+           $item->description = $value->description;
+           
+           $item->guid = $value->guid;
+           
+           $item->link = $value->link;
+           
+           $item->pubDate = $value->pubDate;
+           
+           $item->save();
+           
+           
+           //if ( !property_exists('enclosure', $value ) ) continue;
+           if ( !isset( $value->enclosure['type']) ) continue;
+           
+                      
+           if ( !is_array($value->enclosure) ){
+           
+                 $this->enclosureCreate($value->enclosure, $value->guid);
+           
+           } else {
+           
+                for( $i = 0; $i < count( $value->enclosure ); $i++ ){
+                
+                 $this->enclosureCreate($value->enclosure[$i], $value->guid); 
+                
+                }
+           
+           }
+           
+           
+           
+           
         
         }
         
         
-        //var_dump($xml);
+        
     
     }
     

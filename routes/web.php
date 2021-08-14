@@ -18,6 +18,7 @@ Route::get('/', function () {
 
 Route::get('getRss/{adress}', 'RssReaderController@getNews');
 
+//Route::get('getRss/{adress}', 'RssReaderController@getNews');
 
 
 
