@@ -7,6 +7,7 @@ use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\DB;
 use App\Item;
 use App\Enclosure;
+use App\QueryLogs;
 
 class RssReaderController extends BaseController
 {
@@ -15,12 +16,6 @@ class RssReaderController extends BaseController
    
     function enclosureCreate( $object, $item_id ){
         
-        /*
-        var_dump( $object);
-        echo "<hr />";
-        echo "$item_id";
-        echo "<hr />";
-        //if( !isset($value->enclosure) ) return;*/
         
         
         $enclosure = new Enclosure;
@@ -31,7 +26,7 @@ class RssReaderController extends BaseController
            
            $enclosure->length = $object['length'];
            
-           $enclosure->item_id = $item_id;1;//$object->item_id;
+           $enclosure->item_id = $item_id;
            
            $enclosure->save();           
            
@@ -40,15 +35,59 @@ class RssReaderController extends BaseController
     
     
     
-    function getNews( $adress ){
+    function logQuery( $logArr ){
     
-        $adress = "http://static.feed.rbc.ru/rbc/logical/footer/news.rss";
-        
-        ini_set('user_agent', 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20100101 Firefox/16.0');
     
-        $xml = simplexml_load_file( $adress );
+        $newLogRow = new QueryLogs;
+        
+        $newLogRow->requestUrl = $logArr['url'];
+        
+        $newLogRow->requestMethod = $logArr['method'];
+        
+        $newLogRow->responseHttpCode = $logArr['httpCode'];
+        
+        $newLogRow->timestamp = date('H:i:s d-m-y');
+        
+        $newLogRow->save();
+    
+    }
+    
+    
+    function getNews( $url ){
+    
+        $logArr['url'] = "http://static.feed.rbc.ru/rbc/logical/footer/news.rss";
+        
+        $logArr['method'] = 'GET';
+        
+        $curl = curl_init();
+        curl_setopt($curl, CURLOPT_HEADER, 1);
+        
+        curl_setopt($curl, CURLOPT_USERAGENT,'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.17 (KHTML, like Gecko) Chrome/24.0.1312.52 Safari/537.17');
+        curl_setopt($curl, CURLOPT_AUTOREFERER, true); 
+        curl_setopt($curl, CURLOPT_FOLLOWLOCATION, 1);
+        curl_setopt($curl, CURLOPT_VERBOSE, 1);
+        curl_setopt_array($curl, array(
+        CURLOPT_CUSTOMREQUEST => $logArr['method'],
+        CURLOPT_URL => $logArr['url'],
+        CURLOPT_RETURNTRANSFER => true
+        ));
+        $response = curl_exec($curl);
+        
+        if ($response !== false)
+            {
+              $curlInfo = curl_getinfo($curl);
+              $logArr['httpCode'] = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+              $logArr['header'] = substr($response, 0, $curlInfo['header_size']);
+              $response = substr($response, $curlInfo['header_size']);
+            }
+            
+        curl_close($curl);
         
         
+        
+        $xml = simplexml_load_string( $response );
+        
+                
         foreach( $xml->channel->item as $key => $value ){
         
            $res = Item::where('guid', $value->guid)->get();
@@ -71,7 +110,6 @@ class RssReaderController extends BaseController
            $item->save();
            
            
-           //if ( !property_exists('enclosure', $value ) ) continue;
            if ( !isset( $value->enclosure['type']) ) continue;
            
                       
@@ -96,8 +134,8 @@ class RssReaderController extends BaseController
         }
         
         
-        
-    
+       
+    $this->logQuery( $logArr );
     }
     
     
